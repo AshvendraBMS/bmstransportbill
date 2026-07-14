@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TransportBill — Bill Management System</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f8f8f7;--bg3:#f2f1ef;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.2);
+  --txt:#1a1a1a;--txt2:#666;--txt3:#aaa;
+  --blue-bg:#e6f1fb;--blue-txt:#185fa5;--blue-border:#185fa5;
+  --green-bg:#eaf3de;--green-txt:#3b6d11;--green-border:#3b6d11;
+  --red-bg:#fcebeb;--red-txt:#a32d2d;--red-border:#a32d2d;
+  --warn-bg:#faeeda;--warn-txt:#854f0b;--warn-border:#854f0b;
+  --purple-bg:#f0eafb;--purple-txt:#6b21a8;--purple-border:#6b21a8;
+  --teal-bg:#e2f5f2;--teal-txt:#0f766e;--teal-border:#0f766e;
+  --radius:8px;--radius-lg:12px
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1e1e1c;--bg2:#252523;--bg3:#171715;
+    --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+    --txt:#f0ede8;--txt2:#9a9790;--txt3:#5a5955;
+    --blue-bg:#0c447c;--blue-txt:#85b7eb;--blue-border:#85b7eb;
+    --green-bg:#27500a;--green-txt:#97c459;--green-border:#97c459;
+    --red-bg:#791f1f;--red-txt:#f09595;--red-border:#f09595;
+    --warn-bg:#633806;--warn-txt:#ef9f27;--warn-border:#ef9f27;
+    --purple-bg:#3b1a6b;--purple-txt:#c084fc;--purple-border:#c084fc;
+    --teal-bg:#0d3d38;--teal-txt:#5eead4;--teal-border:#5eead4
+  }
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg3);color:var(--txt);min-height:100vh}
+.hidden{display:none!important}
+
+/* AUTH */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--bg3)}
+.auth-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:2rem;width:100%;max-width:440px;box-shadow:0 4px 24px rgba(0,0,0,0.06)}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:1.5rem}
+.auth-logo-icon{width:44px;height:44px;background:var(--blue-bg);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--blue-txt);font-size:22px}
+.auth-logo h1{font-size:18px;font-weight:600;color:var(--txt)}
+.auth-logo p{font-size:12px;color:var(--txt2)}
+.auth-tabs{display:flex;gap:4px;margin-bottom:1.5rem;background:var(--bg2);padding:4px;border-radius:var(--radius)}
+.auth-tab{flex:1;padding:8px;border:none;background:transparent;color:var(--txt2);font-size:13px;cursor:pointer;border-radius:calc(var(--radius) - 2px);font-family:inherit;transition:all 0.15s}
+.auth-tab.active{background:var(--bg);color:var(--txt);border:0.5px solid var(--border)}
+.form-group{margin-bottom:1rem}
+label{display:block;font-size:12px;color:var(--txt2);margin-bottom:4px;font-weight:500}
+input,select,textarea{width:100%;padding:9px 12px;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);color:var(--txt);font-size:14px;font-family:inherit;outline:none;transition:border-color 0.15s,box-shadow 0.15s}
+input:focus,select:focus,textarea:focus{border-color:var(--blue-border);box-shadow:0 0 0 3px var(--blue-bg)}
+input[readonly]{background:var(--bg2);color:var(--txt2)}
+.btn{padding:9px 18px;border:0.5px solid var(--border2);border-radius:var(--radius);background:transparent;color:var(--txt);font-size:14px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s;text-decoration:none}
+.btn:hover{background:var(--bg2)}
+.btn:active{transform:scale(0.98)}
+.btn-primary{background:var(--blue-bg);color:var(--blue-txt);border-color:var(--blue-border)}
+.btn-primary:hover{opacity:0.85}
+.btn-danger{background:var(--red-bg);color:var(--red-txt);border-color:var(--red-border)}
+.btn-danger:hover{opacity:0.85}
+.btn-success{background:var(--green-bg);color:var(--green-txt);border-color:var(--green-border)}
+.btn-warn{background:var(--warn-bg);color:var(--warn-txt);border-color:var(--warn-border)}
+.btn-full{width:100%;justify-content:center}
+.alert{padding:10px 14px;border-radius:var(--radius);font-size:13px;margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+.alert-error{background:var(--red-bg);color:var(--red-txt);border:0.5px solid var(--red-border)}
+.alert-success{background:var(--green-bg);color:var(--green-txt);border:0.5px solid var(--green-border)}
+.alert-warn{background:var(--warn-bg);color:var(--warn-txt);border:0.5px solid var(--warn-border)}
+.alert-info{background:var(--blue-bg);color:var(--blue-txt);border:0.5px solid var(--blue-border)}
+
+/* MAIN LAYOUT */
+.main-layout{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:235px;background:var(--bg);border-right:0.5px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sidebar-logo{padding:1rem 1.25rem;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:10px}
+.sidebar-logo .icon{width:34px;height:34px;background:var(--blue-bg);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--blue-txt);font-size:18px}
+.sidebar-logo span{font-size:14px;font-weight:600;color:var(--txt)}
+.sidebar-user{padding:0.875rem 1.25rem;border-bottom:0.5px solid var(--border)}
+.sidebar-user .uname{font-size:13px;font-weight:500;color:var(--txt)}
+.sidebar-user .plant-tag{font-size:10px;color:var(--txt3);margin-top:3px}
+.role-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:var(--radius);margin-top:4px;font-weight:500}
+.badge-admin{background:var(--red-bg);color:var(--red-txt)}
+.badge-manager{background:var(--blue-bg);color:var(--blue-txt)}
+.badge-viewer{background:var(--green-bg);color:var(--green-txt)}
+.badge-staff{background:var(--warn-bg);color:var(--warn-txt)}
+.nav{padding:0.5rem;flex:1}
+.nav-section{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:0.08em;padding:8px 12px 4px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--txt2);margin-bottom:2px;border:none;background:transparent;width:100%;text-align:left;font-family:inherit;transition:all 0.12s}
+.nav-item:hover{background:var(--bg2);color:var(--txt)}
+.nav-item.active{background:var(--blue-bg);color:var(--blue-txt)}
+.nav-item i{font-size:17px;width:20px;flex-shrink:0}
+.sidebar-footer{padding:0.75rem;border-top:0.5px solid var(--border)}
+.sync-badge{display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;border-radius:var(--radius);margin:0 0.75rem 0.5rem;font-weight:500}
+.sync-ok{background:var(--green-bg);color:var(--green-txt)}
+.sync-saving{background:var(--warn-bg);color:var(--warn-txt)}
+.sync-err{background:var(--red-bg);color:var(--red-txt)}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-width:0}
+.topbar{background:var(--bg);border-bottom:0.5px solid var(--border);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar h2{font-size:16px;font-weight:600;color:var(--txt)}
+.page{padding:1.5rem;flex:1}
+
+/* DASHBOARD KANBAN */
+.dash-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1.5rem}
+.sum-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;cursor:pointer;transition:box-shadow 0.15s}
+.sum-card:hover{box-shadow:0 2px 12px rgba(0,0,0,0.08)}
+.sum-card .val{font-size:26px;font-weight:700;margin-top:4px}
+.sum-card .lbl{font-size:11px;color:var(--txt2);font-weight:500;text-transform:uppercase;letter-spacing:0.04em}
+.sum-card .sub{font-size:12px;margin-top:2px;font-weight:500}
+.sum-card .icon-wrap{width:30px;height:30px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:15px;margin-bottom:6px}
+
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:1.5rem}
+.kb-col{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.kb-head{padding:10px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border)}
+.kb-head-pending{background:var(--warn-bg);color:var(--warn-txt)}
+.kb-head-partial{background:var(--blue-bg);color:var(--blue-txt)}
+.kb-head-paid{background:var(--green-bg);color:var(--green-txt)}
+.kb-body{padding:10px;max-height:380px;overflow-y:auto}
+.kb-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:8px;cursor:pointer;transition:all 0.12s;font-size:12px}
+.kb-card:hover{border-color:var(--blue-border);background:var(--blue-bg)}
+.kb-card:last-child{margin-bottom:0}
+.kb-card .kb-vendor{font-weight:600;font-size:13px;color:var(--txt);margin-bottom:4px}
+.kb-card .kb-row{display:flex;justify-content:space-between;color:var(--txt2);margin-top:2px}
+.kb-card .kb-amt{font-weight:600;color:var(--txt)}
+.kb-empty{text-align:center;padding:2rem 1rem;color:var(--txt3);font-size:12px}
+.plant-chip{display:inline-block;font-size:10px;padding:1px 7px;background:var(--teal-bg);color:var(--teal-txt);border-radius:20px;margin-top:3px;font-weight:600}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:1.5rem}
+.stat-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem}
+.stat-card .val{font-size:22px;font-weight:600;margin-top:6px;color:var(--txt)}
+.stat-card .lbl{font-size:12px;color:var(--txt2)}
+.stat-card .icon-wrap{width:32px;height:32px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:8px}
+
+/* TABLE */
+.table-wrap{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.table-header{padding:1rem 1.25rem;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.search-box{position:relative;flex:1;min-width:200px}
+.search-box input{padding-left:34px}
+.search-box i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:16px;pointer-events:none}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--bg2);padding:10px 12px;text-align:left;font-weight:500;font-size:11px;color:var(--txt2);border-bottom:0.5px solid var(--border);white-space:nowrap;text-transform:uppercase;letter-spacing:0.04em}
+td{padding:9px 12px;border-bottom:0.5px solid var(--border);color:var(--txt);white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.pill-paid{background:var(--green-bg);color:var(--green-txt)}
+.pill-pending{background:var(--warn-bg);color:var(--warn-txt)}
+.pill-partial{background:var(--blue-bg);color:var(--blue-txt)}
+.pill-under{background:var(--purple-bg);color:var(--purple-txt)}
+.pill-plant{background:var(--teal-bg);color:var(--teal-txt)}
+
+/* FORM */
+.form-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.25rem}
+.form-card-title{font-size:14px;font-weight:600;margin-bottom:1rem;padding-bottom:10px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:8px;color:var(--txt)}
+.form-card-title i{font-size:18px;color:var(--blue-txt)}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem}
+.upload-zone{border:1.5px dashed var(--border2);border-radius:var(--radius);padding:1.5rem;text-align:center;cursor:pointer;color:var(--txt2);font-size:13px;transition:all 0.15s}
+.upload-zone:hover{border-color:var(--blue-border);color:var(--blue-txt);background:var(--blue-bg)}
+.upload-zone .upload-icon{font-size:28px;display:block;margin-bottom:6px}
+.file-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);font-size:12px;color:var(--txt2);margin-top:6px}
+.file-item i{color:var(--blue-txt);font-size:16px}
+
+/* VENDOR AUTOCOMPLETE */
+.vc-wrap{position:relative}
+.vc-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.1)}
+.vc-item{padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--border);display:flex;gap:10px}
+.vc-item:hover{background:var(--blue-bg);color:var(--blue-txt)}
+.vc-item:last-child{border-bottom:none}
+.vc-code{font-weight:600;min-width:80px;color:var(--blue-txt)}
+.vc-name{color:var(--txt2)}
+.vc-item:hover .vc-name{color:var(--blue-txt)}
+
+/* BILL ID BADGE */
+.bill-id-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;background:var(--purple-bg);color:var(--purple-txt);border-radius:20px;font-size:11px;font-weight:600;font-family:monospace}
+
+/* PLANT CHECKBOX LIST */
+.plant-check-list{border:0.5px solid var(--border2);border-radius:var(--radius);padding:10px 12px;max-height:180px;overflow-y:auto;background:var(--bg)}
+.plant-check-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px}
+.plant-check-item input{width:auto;margin:0}
+.plant-check-item label{margin:0;font-size:13px;color:var(--txt);font-weight:400;cursor:pointer}
+
+/* MODAL */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem}
+.modal{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.15)}
+.modal-sm{max-width:440px}
+.modal-header{padding:1.25rem 1.5rem;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:1}
+.modal-header h3{font-size:15px;font-weight:600}
+.modal-body{padding:1.5rem}
+.modal-footer{padding:1rem 1.5rem;border-top:0.5px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--bg)}
+
+/* DETAIL */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.detail-row{padding:8px 0;border-bottom:0.5px solid var(--border)}
+.detail-row:nth-last-child(-n+2){border-bottom:none}
+.detail-row .key{font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px}
+.detail-row .val{font-size:13px;font-weight:500;color:var(--txt)}
+
+/* USERS */
+.user-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:10px}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:var(--blue-txt);flex-shrink:0}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--txt2)}
+.empty-state i{font-size:48px;display:block;margin-bottom:12px;color:var(--txt3)}
+.empty-state p{font-size:14px}
+
+/* OTP */
+.otp-inputs{display:flex;gap:8px;justify-content:center;margin:1rem 0}
+.otp-inputs input{width:44px;text-align:center;font-size:20px;font-weight:700;padding:10px 4px}
+
+/* LOADING */
+#loadingOverlay{position:fixed;inset:0;background:var(--bg3);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;gap:12px}
+#loadingOverlay .spin{width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--blue-txt);border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loadingOverlay p{font-size:13px;color:var(--txt2)}
+
+@media print{
+  .sidebar,.topbar,.btn,.table-header .btn,.no-print{display:none!important}
+  .content{overflow:visible}
+  .page{padding:0}
+  .table-wrap{border:none}
+}
+</style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+  <div class="spin"></div>
+  <p>Connecting to cloud storage…</p>
+</div>
+
+<!-- FIREBASE CONFIG SETUP SCREEN -->
+<div class="auth-wrap hidden" id="configPage">
+  <div class="auth-card" style="max-width:520px">
+    <div class="auth-logo">
+      <div class="auth-logo-icon"><i class="ti ti-plug-connected"></i></div>
+      <div><h1>One-Time Setup</h1><p>Connect your free Firebase cloud database</p></div>
+    </div>
+    <div class="alert alert-warn" style="margin-bottom:1rem">
+      <i class="ti ti-alert-triangle" style="font-size:18px;flex-shrink:0"></i>
+      <div>Cloud storage is not connected yet. Paste your Firebase config below (see instructions in chat) to enable real cross-device data saving.</div>
+    </div>
+    <div id="configAlert"></div>
+    <div class="form-group">
+      <label>Paste your Firebase config object here</label>
+      <textarea id="fbConfigInput" rows="9" style="font-family:monospace;font-size:12px" placeholder='{
+  apiKey: "AIzaSy...",
+  authDomain: "yourproject.firebaseapp.com",
+  projectId: "yourproject",
+  storageBucket: "yourproject.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef"
+}'></textarea>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveFirebaseConfig()"><i class="ti ti-plug-connected"></i> Connect & Save</button>
+    <div style="text-align:center;margin-top:1rem">
+      <button class="btn" style="font-size:12px" onclick="useOfflineMode()"><i class="ti ti-device-floppy"></i> Skip — use offline mode (this device only)</button>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+
+<!-- ===== AUTH ===== -->
+<div class="auth-wrap" id="authPage">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon"><i class="ti ti-truck"></i></div>
+      <div><h1>TransportBill</h1><p>Transporter Bill Management System</p></div>
+    </div>
+    <div class="alert alert-info" style="margin-bottom:1rem">
+      <i class="ti ti-cloud" style="font-size:18px;flex-shrink:0"></i>
+      <div><strong>Cloud Storage Active</strong> — Data auto-saved to cloud.</div>
+    </div>
+    <div id="authAlert"></div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')" id="tabLoginBtn">Login</button>
+      <button class="auth-tab" onclick="switchAuthTab('forgot')" id="tabForgotBtn">Forgot Password</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')" id="tabRegisterBtn" style="display:none">Register User</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="loginForm">
+      <div class="form-group"><label>Username</label><input type="text" id="loginUser" placeholder="Enter username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="loginPass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="form-group" style="margin-top:1.25rem">
+        <button class="btn btn-primary btn-full" onclick="doLogin()"><i class="ti ti-login"></i> Login</button>
+      </div>
+      <div style="text-align:center;margin-top:1rem;font-size:12px;color:var(--txt3)">Default Admin: <strong>admin</strong> / <strong>admin123</strong></div>
+    </div>
+
+    <!-- FORGOT PASSWORD -->
+    <div id="forgotForm" class="hidden">
+      <div id="forgotStep1">
+        <div class="alert alert-info"><i class="ti ti-info-circle" style="font-size:18px;flex-shrink:0"></i><div>Enter your username. A 6-digit OTP will be shown (simulated — in production this goes to your registered email/mobile).</div></div>
+        <div class="form-group"><label>Username *</label><input type="text" id="fpUser" placeholder="Your username"></div>
+        <button class="btn btn-primary btn-full" onclick="sendOTP()"><i class="ti ti-send"></i> Send OTP</button>
+      </div>
+      <div id="forgotStep2" class="hidden">
+        <div class="alert alert-success" id="otpSentAlert"></div>
+        <div class="form-group">
+          <label>Enter 6-digit OTP</label>
+          <div class="otp-inputs">
+            <input type="text" maxlength="1" class="otp-box" id="otp0" oninput="otpMove(0)">
+            <input type="text" maxlength="1" class="otp-box" id="otp1" oninput="otpMove(1)">
+            <input type="text" maxlength="1" class="otp-box" id="otp2" oninput="otpMove(2)">
+            <input type="text" maxlength="1" class="otp-box" id="otp3" oninput="otpMove(3)">
+            <input type="text" maxlength="1" class="otp-box" id="otp4" oninput="otpMove(4)">
+            <input type="text" maxlength="1" class="otp-box" id="otp5" oninput="otpMove(5)">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="verifyOTP()"><i class="ti ti-shield-check"></i> Verify OTP</button>
+      </div>
+      <div id="forgotStep3" class="hidden">
+        <div class="alert alert-success"><i class="ti ti-check" style="font-size:18px;flex-shrink:0"></i><div>OTP verified! Set your new password.</div></div>
+        <div class="form-group"><label>New Password *</label><input type="password" id="fpNewPass" placeholder="6+ characters"></div>
+        <div class="form-group"><label>Confirm Password *</label><input type="password" id="fpConfPass" placeholder="Repeat password"></div>
+        <button class="btn btn-primary btn-full" onclick="resetPassword()"><i class="ti ti-lock"></i> Reset Password</button>
+      </div>
+      <div style="margin-top:1rem;text-align:center">
+        <button class="btn" style="font-size:12px" onclick="switchAuthTab('login')"><i class="ti ti-arrow-left"></i> Back to Login</button>
+      </div>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="registerForm" class="hidden">
+      <div class="form-group"><label>Full Name *</label><input type="text" id="regName" placeholder="Full name"></div>
+      <div class="form-group"><label>Username *</label><input type="text" id="regUser" placeholder="Unique username"></div>
+      <div class="form-group"><label>Email / Mobile (for OTP recovery)</label><input type="text" id="regContact" placeholder="email or mobile no."></div>
+      <div class="form-group"><label>Password *</label><input type="password" id="regPass" placeholder="6+ characters"></div>
+      <div class="form-group">
+        <label>Role *</label>
+        <select id="regRole" onchange="toggleRegPlants()">
+          <option value="manager">Manager — Add, Edit, View bills</option>
+          <option value="staff">Staff — Add and View bills</option>
+          <option value="viewer">Viewer — View only</option>
+        </select>
+      </div>
+      <div class="form-group" id="regPlantsWrap">
+        <label>Plant Access * <span style="color:var(--txt3);font-size:10px">(user can only work with these plants)</span></label>
+        <div class="plant-check-list" id="regPlantsList"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:1.25rem">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="doRegister()"><i class="ti ti-user-plus"></i> Register</button>
+        <button class="btn" onclick="backToApp()" id="backToAppBtn" style="display:none"><i class="ti ti-arrow-left"></i> Back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div class="main-layout hidden" id="mainApp">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="icon"><i class="ti ti-truck"></i></div>
+      <span>TransportBill</span>
+    </div>
+    <div class="sidebar-user">
+      <div class="uname" id="sidebarName">—</div>
+      <div><span class="role-badge" id="sidebarRoleBadge">—</span></div>
+      <div class="plant-tag" id="sidebarPlants"></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Main</div>
+      <button class="nav-item" onclick="showPage('dashboard')" id="nav-dashboard"><i class="ti ti-dashboard"></i> Dashboard</button>
+      <button class="nav-item" onclick="showPage('bills')" id="nav-bills"><i class="ti ti-file-invoice"></i> Bills List</button>
+      <button class="nav-item" onclick="showPage('addbill')" id="nav-addbill"><i class="ti ti-plus"></i> New Bill</button>
+      <div class="nav-section" id="adminSection" style="display:none">Admin</div>
+      <button class="nav-item hidden" onclick="showPage('users')" id="nav-users"><i class="ti ti-users"></i> User Management</button>
+      <button class="nav-item hidden" onclick="goToRegister()" id="nav-adduser"><i class="ti ti-user-plus"></i> Add User</button>
+      <button class="nav-item hidden" onclick="showPage('vendors')" id="nav-vendors"><i class="ti ti-building-store"></i> Vendor Master</button>
+      <button class="nav-item hidden" onclick="showPage('plants')" id="nav-plants"><i class="ti ti-building-factory-2"></i> Plant Master</button>
+      <div class="nav-section">Reports</div>
+      <button class="nav-item" onclick="showPage('reports')" id="nav-reports"><i class="ti ti-chart-bar"></i> Reports</button>
+    </nav>
+    <div id="syncBadge" class="sync-badge sync-ok"><i class="ti ti-cloud-check"></i> <span id="syncText">Cloud Synced</span></div>
+    <div class="sidebar-footer">
+      <button class="btn btn-full" onclick="doLogout()" style="font-size:13px;color:var(--txt2)"><i class="ti ti-logout"></i> Logout</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="topbar">
+      <h2 id="pageTitle">Dashboard</h2>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:12px;color:var(--txt2)" id="topbarInfo"></span>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="page hidden" id="page-dashboard">
+      <div class="dash-summary" id="dashSummary"></div>
+      <div class="kanban" id="kanban"></div>
+    </div>
+
+    <!-- BILLS LIST -->
+    <div class="page hidden" id="page-bills">
+      <div class="table-wrap">
+        <div class="table-header">
+          <div class="search-box"><i class="ti ti-search"></i><input type="text" placeholder="Search vendor, LR no, invoice, Bill ID, plant…" oninput="filterBills(this.value)"></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <select onchange="filterStatus(this.value)" style="font-size:12px;padding:7px 10px;width:auto">
+              <option value="">All Status</option>
+              <option>Pending</option><option>Under Process</option><option>Paid</option>
+            </select>
+            <select onchange="filterPlant(this.value)" style="font-size:12px;padding:7px 10px;width:auto" id="billsPlantFilter">
+              <option value="">All Plants</option>
+            </select>
+            <button class="btn" onclick="exportCSV()" style="font-size:12px"><i class="ti ti-download"></i> Export CSV</button>
+            <button class="btn btn-primary" onclick="showPage('addbill')" style="font-size:12px" id="addBillBtn"><i class="ti ti-plus"></i> New Bill</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Bill ID</th><th>Plant</th><th>Vendor Code</th><th>Vendor Name</th><th>LR No.</th><th>Bill Date</th><th>Amount</th><th>Advance</th><th>Balance</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="billsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADD / EDIT BILL -->
+    <div class="page hidden" id="page-addbill">
+      <div id="billFormAlert"></div>
+      <div class="form-card">
+        <div class="form-card-title"><i class="ti ti-file-description"></i> Basic Details
+          <span id="billIdDisplay" style="margin-left:auto;font-size:12px;font-weight:400"></span>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Plant *</label>
+            <select id="f_plant"></select>
+          </div>
+          <!-- Vendor Code with autocomplete -->
+          <div class="form-group">
+            <label>Vendor Code * <span style="color:var(--txt3);font-size:10px">(type to search master)</span></label>
+            <div class="vc-wrap">
+              <input type="text" id="f_vendorCode" placeholder="e.g. VND001" autocomplete="off" oninput="vendorCodeInput()" onblur="setTimeout(closeVcDrop,200)">
+              <div class="vc-dropdown hidden" id="vcDropdown"></div>
+            </div>
+          </div>
+          <div class="form-group"><label>Vendor Name * <span style="color:var(--txt3);font-size:10px">(auto-filled)</span></label><input type="text" id="f_vendorName" placeholder="Auto-filled from vendor code" readonly style="background:var(--bg2)"></div>
+          <div class="form-group"><label>Date *</label><input type="date" id="f_date"></div>
+          <div class="form-group"><label>From (Location)</label><input type="text" id="f_from" placeholder="Origin"></div>
+          <div class="form-group"><label>To (Location)</label><input type="text" id="f_to" placeholder="Destination"></div>
+          <div class="form-group"><label>Vehicle Weight</label><input type="text" id="f_vehWeight" placeholder="e.g. 10 ton"></div>
+          <div class="form-group"><label>LR Number *</label><input type="text" id="f_lrNumber" placeholder="Lorry receipt number" oninput="checkDuplicate()"></div>
+          <div class="form-group"><label>LR Date</label><input type="date" id="f_lrDate"></div>
+          <div class="form-group"><label>Invoice Number</label><input type="text" id="f_invoiceNo" placeholder="Invoice no."></div>
+          <div class="form-group"><label>Bill Date</label><input type="date" id="f_billDate"></div>
+          <div class="form-group"><label>Bill Number</label><input type="text" id="f_billNo" placeholder="Bill number"></div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-card-title"><i class="ti ti-cash"></i> Payment Details</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Amount (₹) *</label><input type="number" id="f_amount" placeholder="0" oninput="calcPayment()"></div>
+          <div class="form-group"><label>Advance Paid (₹)</label><input type="number" id="f_advance" placeholder="0" oninput="calcPayment()"></div>
+          <div class="form-group"><label>Balance (₹) — Auto</label><input type="number" id="f_balance" readonly></div>
+          <div class="form-group"><label>Total (₹) — Auto</label><input type="number" id="f_total" readonly></div>
+          <div class="form-group">
+            <label>Payment Status *</label>
+            <select id="f_status">
+              <option value="Pending">Pending — Not yet received</option>
+              <option value="Under Process">Under Process — Being processed</option>
+              <option value="Paid">Paid — Fully received</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-card-title"><i class="ti ti-upload"></i> Document Upload</div>
+        <div class="upload-zone" onclick="document.getElementById('docInput').click()">
+          <i class="ti ti-cloud-upload upload-icon"></i>
+          <div style="font-weight:500">Click to upload documents</div>
+          <div style="font-size:11px;margin-top:4px;color:var(--txt3)">PDF, JPG, PNG, DOC — all formats</div>
+          <input type="file" id="docInput" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xlsx" style="display:none" onchange="handleFiles(this)">
+        </div>
+        <div id="fileList"></div>
+        <div id="dupAlert" style="margin-top:8px"></div>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="submitBill()"><i class="ti ti-device-floppy"></i> Save Bill</button>
+        <button class="btn" onclick="resetForm()"><i class="ti ti-refresh"></i> Reset</button>
+        <button class="btn" onclick="showPage('bills')"><i class="ti ti-arrow-left"></i> Back</button>
+      </div>
+    </div>
+
+    <!-- PLANT MASTER -->
+    <div class="page hidden" id="page-plants">
+      <div class="form-card">
+        <div class="form-card-title"><i class="ti ti-building-factory-2"></i> Add Plant / Location</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Plant Code *</label><input type="text" id="pl_code" placeholder="e.g. PLT001"></div>
+          <div class="form-group"><label>Plant Name / Location *</label><input type="text" id="pl_name" placeholder="e.g. Delhi Warehouse"></div>
+        </div>
+        <button class="btn btn-primary" onclick="addPlant()" style="margin-top:4px"><i class="ti ti-plus"></i> Add Plant</button>
+      </div>
+      <div class="form-card">
+        <div class="form-card-title"><i class="ti ti-list"></i> Bulk Add (one per line: Code, Name)</div>
+        <textarea id="pl_bulk" rows="4" placeholder="PLT001, Delhi Warehouse&#10;PLT002, Mumbai Plant&#10;PLT003, Chennai Depot"></textarea>
+        <button class="btn btn-primary" onclick="bulkAddPlants()" style="margin-top:10px"><i class="ti ti-list-check"></i> Bulk Add</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <span style="font-size:13px;font-weight:600" id="plantCount">Plant Master</span>
+          <button class="btn btn-danger" onclick="clearPlants()" style="font-size:12px"><i class="ti ti-trash"></i> Clear All</button>
+        </div>
+        <div class="table-scroll">
+          <table><thead><tr><th>#</th><th>Plant Code</th><th>Plant Name</th><th>Action</th></tr></thead>
+          <tbody id="plantTableBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VENDOR MASTER -->
+    <div class="page hidden" id="page-vendors">
+      <div class="form-card">
+        <div class="form-card-title"><i class="ti ti-file-spreadsheet"></i> Upload Vendor Master (Excel)</div>
+        <div class="alert alert-info" style="margin-bottom:1rem">
+          <i class="ti ti-info-circle" style="font-size:18px;flex-shrink:0"></i>
+          <div>Excel file must have 2 columns: <strong>Column A = Vendor Code</strong>, <strong>Column B = Vendor Name</strong>. First row = header (will be skipped).</div>
+        </div>
+        <div class="upload-zone" onclick="document.getElementById('vendorExcel').click()">
+          <i class="ti ti-table-import upload-icon"></i>
+          <div style="font-weight:500">Click to upload Vendor Master Excel</div>
+          <div style="font-size:11px;margin-top:4px;color:var(--txt3)">.xlsx or .xls files only</div>
+          <input type="file" id="vendorExcel" accept=".xlsx,.xls" style="display:none" onchange="importVendors(this)">
+        </div>
+        <div id="vendorImportResult" style="margin-top:8px"></div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <span style="font-size:13px;font-weight:600" id="vendorCount">Vendor Master</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn" onclick="downloadVendorTemplate()" style="font-size:12px"><i class="ti ti-download"></i> Download Template</button>
+            <button class="btn btn-danger" onclick="clearVendors()" style="font-size:12px" id="clearVendorsBtn"><i class="ti ti-trash"></i> Clear All</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table><thead><tr><th>#</th><th>Vendor Code</th><th>Vendor Name</th><th>Action</th></tr></thead>
+          <tbody id="vendorTableBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- USER MANAGEMENT -->
+    <div class="page hidden" id="page-users">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <span style="font-size:13px;color:var(--txt2)">Registered users and their roles</span>
+        <button class="btn btn-primary" onclick="goToRegister()"><i class="ti ti-user-plus"></i> Add New User</button>
+      </div>
+      <div id="usersList"></div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="page hidden" id="page-reports">
+      <div class="stats-grid" id="reportStats"></div>
+      <div class="form-card">
+        <div class="form-card-title"><i class="ti ti-filter"></i> Filter Reports</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Start Date</label><input type="date" id="rptStart"></div>
+          <div class="form-group"><label>End Date</label><input type="date" id="rptEnd"></div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="rptStatus"><option value="">All</option><option>Pending</option><option>Under Process</option><option>Paid</option></select>
+          </div>
+          <div class="form-group"><label>Plant</label><select id="rptPlant"><option value="">All Plants</option></select></div>
+          <div class="form-group"><label>Vendor Code</label><input type="text" id="rptVendor" placeholder="Filter by vendor code"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="generateReport()"><i class="ti ti-search"></i> Generate Report</button>
+          <button class="btn" onclick="exportReportCSV()"><i class="ti ti-download"></i> Export CSV</button>
+          <button class="btn btn-success" onclick="printReport()"><i class="ti ti-printer"></i> Print / PDF</button>
+        </div>
+      </div>
+      <div class="table-wrap hidden" id="reportTableWrap">
+        <div class="table-header"><span style="font-size:13px;font-weight:600" id="reportCount">—</span></div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Bill ID</th><th>Plant</th><th>Vendor Code</th><th>Vendor Name</th><th>LR No.</th><th>Date</th><th>Amount</th><th>Advance</th><th>Balance</th><th>Status</th></tr></thead>
+            <tbody id="reportTbody"></tbody>
+          </table>
+        </div>
+        <div id="reportSummaryRow" style="padding:12px 16px;border-top:0.5px solid var(--border);background:var(--bg2);font-size:13px;font-weight:600"></div>
+      </div>
+    </div>
+
+  </div><!-- content -->
+</div><!-- main-layout -->
+
+<!-- BILL DETAIL MODAL -->
+<div class="modal-backdrop hidden" id="billModal">
+  <div class="modal">
+    <div class="modal-header"><h3>Bill Details</h3><button class="btn" onclick="closeModal('billModal')" style="padding:5px 8px"><i class="ti ti-x"></i></button></div>
+    <div class="modal-body" id="billModalBody"></div>
+    <div class="modal-footer" id="billModalFooter"></div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-backdrop hidden" id="delModal">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3>Delete Bill?</h3></div>
+    <div class="modal-body">
+      <div class="alert alert-error"><i class="ti ti-alert-triangle" style="font-size:18px;flex-shrink:0"></i><div><strong>This action is permanent.</strong> Deleted data cannot be recovered. Only Admin can do this.</div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('delModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmDelBtn"><i class="ti ti-trash"></i> Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<script>
+// ===== CLOUD STORAGE (Firebase Firestore, with localStorage fallback) =====
+const CK = { bills:'tbms_bills_v5', users:'tbms_users_v5', session:'tbms_session_v5', vendors:'tbms_vendors_v5', plants:'tbms_plants_v5' };
+const FB_CONFIG_KEY='tbms_fb_config_v1';
+let _cache = { bills:null, users:null, vendors:null, plants:null };
+let _db=null, _fbReady=false, _offlineMode=false;
+
+function loadStoredFbConfig(){ try{ return JSON.parse(localStorage.getItem(FB_CONFIG_KEY)||'null'); }catch{ return null; } }
+
+async function initFirebase(){
+  const cfg=loadStoredFbConfig();
+  if(!cfg){ return false; }
+  try{
+    if(!firebase.apps || !firebase.apps.length){ firebase.initializeApp(cfg); }
+    _db=firebase.firestore();
+    // quick connectivity check
+    await _db.collection('_ping').doc('ping').set({t:Date.now()}).catch(()=>{});
+    _fbReady=true;
+    return true;
+  }catch(e){
+    console.error('Firebase init failed',e);
+    _fbReady=false;
+    return false;
+  }
+}
+
+async function cloudGet(key){
+  if(_fbReady && _db && !_offlineMode){
+    try{
+      const doc=await _db.collection('tbms_data').doc(key).get();
+      if(doc.exists){
+        const val=doc.data().value;
+        try{ localStorage.setItem(key,val); }catch{}
+        return JSON.parse(val);
+      }
+      return null;
+    }catch(e){ setSyncStatus('error'); }
+  }
+  try{ return JSON.parse(localStorage.getItem(key)||'null'); }catch{ return null; }
+}
+
+async function cloudSet(key,val){
+  setSyncStatus('saving');
+  const jsonStr=JSON.stringify(val);
+  try{ localStorage.setItem(key,jsonStr); }catch{}
+  if(_fbReady && _db && !_offlineMode){
+    try{
+      await _db.collection('tbms_data').doc(key).set({value:jsonStr,updatedAt:Date.now()});
+      setSyncStatus('ok');
+      return;
+    }catch(e){ setSyncStatus('error'); return; }
+  }
+  setSyncStatus('offline');
+}
+
+function setSyncStatus(s){
+  const b=document.getElementById('syncBadge'); if(!b)return;
+  const map={
+    ok:['sync-ok','ti-cloud-check','Cloud Synced'],
+    saving:['sync-saving','ti-cloud-upload','Saving…'],
+    error:['sync-err','ti-cloud-off','Sync Error'],
+    offline:['sync-saving','ti-device-floppy','Offline (this device)']
+  };
+  const [cls,icon,lbl]=map[s]||map.ok;
+  b.className='sync-badge '+cls;
+  b.innerHTML=`<i class="ti ${icon}"></i> <span>${lbl}</span>`;
+}
+
+async function saveFirebaseConfig(){
+  const raw=document.getElementById('fbConfigInput').value.trim();
+  if(!raw){ showAlert('configAlert','Please paste your Firebase config','error'); return; }
+  let cfg;
+  try{
+    // allow both {key: "val"} JS object style and strict JSON
+    const wrapped='('+raw.replace(/^\s*const\s+\w+\s*=\s*/,'').replace(/;\s*$/,'')+')';
+    cfg=eval(wrapped);
+  }catch(e){ showAlert('configAlert','Could not parse config. Paste the exact object Firebase gave you.','error'); return; }
+  if(!cfg.apiKey||!cfg.projectId){ showAlert('configAlert','Config looks incomplete — must include apiKey and projectId','error'); return; }
+  localStorage.setItem(FB_CONFIG_KEY,JSON.stringify(cfg));
+  showAlert('configAlert','Connecting…','info');
+  const ok=await initFirebase();
+  if(ok){
+    document.getElementById('configPage').classList.add('hidden');
+    document.getElementById('loadingOverlay').classList.remove('hidden');
+    await initApp();
+  } else {
+    showAlert('configAlert','Could not connect. Check your config values and Firestore is enabled in test mode.','error');
+  }
+}
+
+function useOfflineMode(){
+  _offlineMode=true;
+  document.getElementById('configPage').classList.add('hidden');
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+  initApp();
+}
+
+async function getBills(){ if(_cache.bills)return _cache.bills; _cache.bills=await cloudGet(CK.bills)||[]; return _cache.bills; }
+async function getUsers(){ if(_cache.users)return _cache.users; _cache.users=await cloudGet(CK.users)||[]; return _cache.users; }
+async function getVendors(){ if(_cache.vendors)return _cache.vendors; _cache.vendors=await cloudGet(CK.vendors)||[]; return _cache.vendors; }
+async function getPlants(){ if(_cache.plants)return _cache.plants; _cache.plants=await cloudGet(CK.plants)||[]; return _cache.plants; }
+async function saveBills(b){ _cache.bills=b; await cloudSet(CK.bills,b); }
+async function saveUsers(u){ _cache.users=u; await cloudSet(CK.users,u); }
+async function saveVendors(v){ _cache.vendors=v; await cloudSet(CK.vendors,v); }
+async function savePlants(p){ _cache.plants=p; await cloudSet(CK.plants,p); }
+
+// ===== UNIQUE BILL ID =====
+function genBillId(){
+  const ts=Date.now().toString(36).toUpperCase();
+  const rand=Math.random().toString(36).substr(2,4).toUpperCase();
+  return 'TB-'+ts+'-'+rand;
+}
+
+// ===== STATE =====
+let currentUser=null, editingBillId=null, deleteTargetId=null, uploadedFiles=[], filterQuery='', filterSt='', filterPl='', reportData=[];
+let _generatedOTP='', _otpUsername='';
+
+// ===== INIT =====
+async function initApp(){
+  let users=await getUsers();
+  if(!users||users.length===0){
+    users=[{id:'admin_001',username:'admin',password:'admin123',name:'Administrator',role:'admin',contact:'admin@company.com',plants:[],createdAt:new Date().toISOString()}];
+    await saveUsers(users);
+  }
+  const saved=await cloudGet(CK.session);
+  if(saved){ currentUser=saved; await enterApp(); }
+  else{ document.getElementById('loadingOverlay').classList.add('hidden'); document.getElementById('app').classList.remove('hidden'); }
+}
+
+// ===== AUTH =====
+function switchAuthTab(tab){
+  ['loginForm','forgotForm','registerForm'].forEach(f=>document.getElementById(f).classList.add('hidden'));
+  document.getElementById(tab==='login'?'loginForm':tab==='forgot'?'forgotForm':'registerForm').classList.remove('hidden');
+  ['tabLoginBtn','tabForgotBtn','tabRegisterBtn'].forEach(t=>document.getElementById(t).classList.remove('active'));
+  document.getElementById(tab==='login'?'tabLoginBtn':tab==='forgot'?'tabForgotBtn':'tabRegisterBtn').classList.add('active');
+  clearAlert('authAlert');
+  if(tab==='register') loadRegPlantsList();
+}
+
+async function loadRegPlantsList(){
+  const plants=await getPlants();
+  const wrap=document.getElementById('regPlantsList');
+  if(!plants.length){ wrap.innerHTML='<div style="font-size:12px;color:var(--txt3);padding:6px 0">No plants in master yet. Add plants first from Plant Master (admin).</div>'; return; }
+  wrap.innerHTML=plants.map(p=>`<div class="plant-check-item"><input type="checkbox" id="regpl_${p.code}" value="${p.code}"><label for="regpl_${p.code}"><strong>${p.code}</strong> — ${p.name}</label></div>`).join('');
+}
+function toggleRegPlants(){ /* placeholder for future role-based logic */ }
+
+async function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value;
+  if(!u||!p){showAlert('authAlert','Please enter username and password','error');return;}
+  const users=await getUsers();
+  const found=users.find(x=>x.username===u&&x.password===p);
+  if(!found){showAlert('authAlert','Incorrect username or password','error');return;}
+  currentUser=found; await cloudSet(CK.session,found); await enterApp();
+}
+
+async function doRegister(){
+  const name=document.getElementById('regName').value.trim();
+  const username=document.getElementById('regUser').value.trim();
+  const password=document.getElementById('regPass').value;
+  const contact=document.getElementById('regContact').value.trim();
+  const role=document.getElementById('regRole').value;
+  const plants=Array.from(document.querySelectorAll('#regPlantsList input:checked')).map(el=>el.value);
+  if(!name||!username||!password){showAlert('authAlert','Fill all required (*) fields','error');return;}
+  if(password.length<6){showAlert('authAlert','Password must be at least 6 characters','error');return;}
+  if(plants.length===0){showAlert('authAlert','Please assign at least one Plant to this user','error');return;}
+  const users=await getUsers();
+  if(users.find(x=>x.username===username)){showAlert('authAlert','Username already exists, choose another','error');return;}
+  users.push({id:'u_'+Date.now(),username,password,name,role,contact,plants,createdAt:new Date().toISOString()});
+  await saveUsers(users);
+  showAlert('authAlert',`"${name}" registered successfully! Role: ${role}, Plants: ${plants.join(', ')}`,'success');
+  ['regName','regUser','regPass','regContact'].forEach(id=>document.getElementById(id).value='');
+  document.querySelectorAll('#regPlantsList input:checked').forEach(el=>el.checked=false);
+  setTimeout(async()=>{ if(currentUser){backToApp();showPage('users');}else switchAuthTab('login'); },1500);
+}
+
+function doLogout(){
+  currentUser=null; cloudSet(CK.session,null);
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('authPage').classList.remove('hidden');
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+  switchAuthTab('login');
+}
+function goToRegister(){
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('authPage').classList.remove('hidden');
+  document.getElementById('tabRegisterBtn').style.display='block';
+  document.getElementById('backToAppBtn').style.display='inline-flex';
+  switchAuthTab('register');
+}
+function backToApp(){
+  document.getElementById('authPage').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+}
+
+// ===== OTP FORGOT PASSWORD =====
+async function sendOTP(){
+  const uname=document.getElementById('fpUser').value.trim();
+  if(!uname){showAlert('authAlert','Enter your username','error');return;}
+  const users=await getUsers();
+  const u=users.find(x=>x.username===uname);
+  if(!u){showAlert('authAlert','Username not found','error');return;}
+  _otpUsername=uname;
+  _generatedOTP=Math.floor(100000+Math.random()*900000).toString();
+  document.getElementById('forgotStep1').classList.add('hidden');
+  document.getElementById('forgotStep2').classList.remove('hidden');
+  const contact=u.contact||'registered contact';
+  document.getElementById('otpSentAlert').innerHTML=`OTP sent to <strong>${contact}</strong>.<br><span style="font-size:11px;color:var(--green-txt)">[Demo mode — OTP: <strong>${_generatedOTP}</strong>]</span>`;
+  document.getElementById('otp0').focus();
+}
+function otpMove(idx){ const v=document.getElementById('otp'+idx).value; if(v&&idx<5) document.getElementById('otp'+(idx+1)).focus(); }
+function verifyOTP(){
+  const entered=[0,1,2,3,4,5].map(i=>document.getElementById('otp'+i).value).join('');
+  if(entered===_generatedOTP){
+    document.getElementById('forgotStep2').classList.add('hidden');
+    document.getElementById('forgotStep3').classList.remove('hidden');
+  } else {
+    showAlert('authAlert','Incorrect OTP, please try again','error');
+    [0,1,2,3,4,5].forEach(i=>document.getElementById('otp'+i).value='');
+    document.getElementById('otp0').focus();
+  }
+}
+async function resetPassword(){
+  const np=document.getElementById('fpNewPass').value;
+  const cp=document.getElementById('fpConfPass').value;
+  if(!np||np.length<6){showAlert('authAlert','Password must be at least 6 characters','error');return;}
+  if(np!==cp){showAlert('authAlert','Passwords do not match','error');return;}
+  const users=await getUsers();
+  const idx=users.findIndex(x=>x.username===_otpUsername);
+  if(idx>-1){ users[idx].password=np; await saveUsers(users); }
+  showAlert('authAlert','Password reset successfully! Please login.','success');
+  _generatedOTP=''; _otpUsername='';
+  setTimeout(()=>{ document.getElementById('forgotStep3').classList.add('hidden'); document.getElementById('forgotStep1').classList.remove('hidden'); switchAuthTab('login'); },1500);
+}
+
+async function enterApp(){
+  document.getElementById('loadingOverlay').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('authPage').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  document.getElementById('sidebarName').textContent=currentUser.name;
+  const rb=document.getElementById('sidebarRoleBadge');
+  rb.textContent=currentUser.role.charAt(0).toUpperCase()+currentUser.role.slice(1);
+  rb.className='role-badge badge-'+currentUser.role;
+  document.getElementById('topbarInfo').textContent=currentUser.username+' ('+currentUser.role+')';
+  const isAdmin=currentUser.role==='admin';
+  const canWrite=isAdmin||currentUser.role==='manager'||currentUser.role==='staff';
+  document.getElementById('sidebarPlants').textContent=isAdmin?'All Plants Access':(currentUser.plants&&currentUser.plants.length?'Plants: '+currentUser.plants.join(', '):'No plant assigned');
+  if(!canWrite){ document.getElementById('nav-addbill').style.display='none'; document.getElementById('addBillBtn').style.display='none'; }
+  if(isAdmin){ ['nav-users','nav-adduser','nav-vendors','nav-plants'].forEach(id=>document.getElementById(id).classList.remove('hidden')); document.getElementById('adminSection').style.display='block'; document.getElementById('tabRegisterBtn').style.display='block'; }
+  showPage('dashboard');
+}
+
+// ===== PAGES =====
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const pg=document.getElementById('page-'+name);
+  const nav=document.getElementById('nav-'+name);
+  if(pg)pg.classList.remove('hidden');
+  if(nav)nav.classList.add('active');
+  const titles={dashboard:'Dashboard',bills:'Bills List',addbill:editingBillId?'Edit Bill':'New Bill',users:'User Management',reports:'Reports',vendors:'Vendor Master',plants:'Plant Master'};
+  document.getElementById('pageTitle').textContent=titles[name]||name;
+  if(name==='dashboard')loadDashboard();
+  else if(name==='bills')loadBillsTable();
+  else if(name==='addbill'&&!editingBillId)resetForm();
+  else if(name==='users')loadUsers();
+  else if(name==='reports')loadReportStats();
+  else if(name==='vendors')loadVendors();
+  else if(name==='plants')loadPlants();
+}
+
+// ===== PLANT ACCESS HELPER =====
+function userPlants(){
+  if(!currentUser) return [];
+  if(currentUser.role==='admin') return null; // null = all plants
+  return currentUser.plants||[];
+}
+function billsForUser(bills){
+  const up=userPlants();
+  if(up===null) return bills; // admin sees all
+  return bills.filter(b=>up.includes(b.plant));
+}
+
+// ===== DASHBOARD (KANBAN) =====
+async function loadDashboard(){
+  let bills=await getBills();
+  bills=billsForUser(bills);
+  const pending=bills.filter(b=>b.status==='Pending');
+  const process=bills.filter(b=>b.status==='Under Process');
+  const paid=bills.filter(b=>b.status==='Paid');
+  const totalAmt=bills.reduce((s,b)=>s+Number(b.amount||0),0);
+  const paidAmt=paid.reduce((s,b)=>s+Number(b.amount||0),0);
+  const outstanding=bills.filter(b=>b.status!=='Paid').reduce((s,b)=>s+Number(b.balance||0),0);
+
+  document.getElementById('dashSummary').innerHTML=[
+    ['ti-file-invoice','Total Bills',bills.length,'₹'+totalAmt.toLocaleString('en-IN'),'var(--blue-bg)','var(--blue-txt)'],
+    ['ti-clock','Pending',pending.length,'₹'+pending.reduce((s,b)=>s+Number(b.amount||0),0).toLocaleString('en-IN'),'var(--warn-bg)','var(--warn-txt)'],
+    ['ti-loader','Under Process',process.length,'₹'+process.reduce((s,b)=>s+Number(b.amount||0),0).toLocaleString('en-IN'),'var(--purple-bg)','var(--purple-txt)'],
+    ['ti-check','Paid',paid.length,'₹'+paidAmt.toLocaleString('en-IN'),'var(--green-bg)','var(--green-txt)'],
+    ['ti-alert-circle','Outstanding Balance','','₹'+outstanding.toLocaleString('en-IN'),'var(--red-bg)','var(--red-txt)'],
+  ].map(([icon,lbl,count,amt,bg,clr])=>`
+    <div class="sum-card" style="border-left:3px solid ${clr}">
+      <div class="icon-wrap" style="background:${bg};color:${clr}"><i class="ti ${icon}"></i></div>
+      <div class="lbl">${lbl}</div>
+      <div class="val" style="color:${clr}">${count!==''?count:''}</div>
+      <div class="sub" style="color:${clr}">${amt}</div>
+    </div>`).join('');
+
+  function kbCards(arr){
+    if(!arr.length) return '<div class="kb-empty"><i class="ti ti-inbox" style="font-size:28px;display:block;margin-bottom:6px"></i>No bills here</div>';
+    return arr.map(b=>`<div class="kb-card" onclick="viewBill('${b.id}')">
+      <div class="kb-vendor">${b.vendorName}</div>
+      <div class="kb-row"><span>${b.lrNumber||'—'}</span><span class="kb-amt">₹${Number(b.amount||0).toLocaleString('en-IN')}</span></div>
+      <div class="kb-row"><span style="font-size:10px;font-family:monospace;color:var(--blue-txt)">${b.id}</span><span>${b.billDate||b.date||'—'}</span></div>
+      ${b.plant?`<span class="plant-chip">${b.plant}</span>`:''}
+    </div>`).join('');
+  }
+
+  document.getElementById('kanban').innerHTML=`
+    <div class="kb-col">
+      <div class="kb-head kb-head-pending"><span><i class="ti ti-clock"></i> Pending Bills</span><span>${pending.length}</span></div>
+      <div class="kb-body">${kbCards(pending)}</div>
+    </div>
+    <div class="kb-col">
+      <div class="kb-head kb-head-partial" style="background:var(--purple-bg);color:var(--purple-txt)"><span><i class="ti ti-loader"></i> Under Process</span><span>${process.length}</span></div>
+      <div class="kb-body">${kbCards(process)}</div>
+    </div>
+    <div class="kb-col">
+      <div class="kb-head kb-head-paid"><span><i class="ti ti-check"></i> Payment Done</span><span>${paid.length}</span></div>
+      <div class="kb-body">${kbCards(paid)}</div>
+    </div>`;
+}
+
+// ===== BILLS TABLE =====
+async function loadBillsTable(){
+  let bills=await getBills();
+  bills=billsForUser(bills);
+  // populate plant filter dropdown
+  const plants=await getPlants();
+  const plantSel=document.getElementById('billsPlantFilter');
+  const up=userPlants();
+  const visiblePlants=up===null?plants:plants.filter(p=>up.includes(p.code));
+  plantSel.innerHTML='<option value="">All Plants</option>'+visiblePlants.map(p=>`<option value="${p.code}">${p.code} — ${p.name}</option>`).join('');
+
+  if(filterQuery){ const q=filterQuery.toLowerCase(); bills=bills.filter(b=>(b.vendorName+'').toLowerCase().includes(q)||(b.lrNumber+'').toLowerCase().includes(q)||(b.vendorCode+'').toLowerCase().includes(q)||(b.invoiceNo+'').toLowerCase().includes(q)||(b.id+'').toLowerCase().includes(q)||(b.plant+'').toLowerCase().includes(q)); }
+  if(filterSt) bills=bills.filter(b=>b.status===filterSt);
+  if(filterPl) bills=bills.filter(b=>b.plant===filterPl);
+  const canEdit=currentUser&&(currentUser.role==='admin'||currentUser.role==='manager');
+  const isAdmin=currentUser&&currentUser.role==='admin';
+  document.getElementById('billsTbody').innerHTML=bills.length
+    ?bills.map(b=>`<tr>
+      <td><span class="bill-id-badge"><i class="ti ti-hash" style="font-size:10px"></i>${b.id}</span></td>
+      <td><span class="pill pill-plant">${b.plant||'—'}</span></td>
+      <td>${b.vendorCode}</td><td title="${b.vendorName}">${b.vendorName}</td>
+      <td>${b.lrNumber}</td><td>${b.billDate||b.date||'—'}</td>
+      <td>₹${Number(b.amount||0).toLocaleString('en-IN')}</td>
+      <td>₹${Number(b.advance||0).toLocaleString('en-IN')}</td>
+      <td>₹${Number(b.balance||0).toLocaleString('en-IN')}</td>
+      <td>${statusPill(b.status)}</td>
+      <td style="display:flex;gap:4px;overflow:visible">
+        <button class="btn" style="padding:4px 7px;font-size:11px" onclick="viewBill('${b.id}')" title="View"><i class="ti ti-eye"></i></button>
+        ${canEdit?`<button class="btn" style="padding:4px 7px;font-size:11px" onclick="editBill('${b.id}')" title="Edit"><i class="ti ti-edit"></i></button>`:''}
+        ${isAdmin?`<button class="btn btn-danger" style="padding:4px 7px;font-size:11px" onclick="confirmDelete('${b.id}')" title="Delete"><i class="ti ti-trash"></i></button>`:''}
+      </td></tr>`).join('')
+    :'<tr><td colspan="11" style="text-align:center;padding:2.5rem;color:var(--txt3)">No bills found</td></tr>';
+}
+function filterBills(q){ filterQuery=q; loadBillsTable(); }
+function filterStatus(s){ filterSt=s; loadBillsTable(); }
+function filterPlant(p){ filterPl=p; loadBillsTable(); }
+
+function statusPill(s){
+  const map={Paid:'pill-paid',Pending:'pill-pending','Under Process':'pill-under'};
+  return `<span class="pill ${map[s]||'pill-pending'}">${s||'—'}</span>`;
+}
+
+// ===== PLANT MASTER =====
+async function loadPlants(){
+  const plants=await getPlants();
+  document.getElementById('plantCount').textContent=`Plant Master (${plants.length} plants)`;
+  document.getElementById('plantTableBody').innerHTML=plants.length
+    ?plants.map((p,i)=>`<tr><td>${i+1}</td><td style="font-weight:600;color:var(--teal-txt)">${p.code}</td><td>${p.name}</td>
+      <td><button class="btn btn-danger" style="padding:3px 7px;font-size:11px" onclick="deletePlant('${p.code}')"><i class="ti ti-x"></i></button></td></tr>`).join('')
+    :'<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--txt3)">No plants added yet.</td></tr>';
+}
+
+async function addPlant(){
+  const code=document.getElementById('pl_code').value.trim();
+  const name=document.getElementById('pl_name').value.trim();
+  if(!code||!name){ alert('Enter both Plant Code and Plant Name'); return; }
+  const plants=await getPlants();
+  if(plants.find(p=>p.code.toUpperCase()===code.toUpperCase())){ alert('This Plant Code already exists'); return; }
+  plants.push({code,name});
+  await savePlants(plants);
+  document.getElementById('pl_code').value='';
+  document.getElementById('pl_name').value='';
+  loadPlants();
+}
+
+async function bulkAddPlants(){
+  const raw=document.getElementById('pl_bulk').value.trim();
+  if(!raw) return;
+  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  const plants=await getPlants();
+  let added=0;
+  lines.forEach(line=>{
+    const parts=line.split(',').map(x=>x.trim());
+    if(parts.length>=2 && parts[0] && parts[1]){
+      if(!plants.find(p=>p.code.toUpperCase()===parts[0].toUpperCase())){
+        plants.push({code:parts[0],name:parts[1]});
+        added++;
+      }
+    }
+  });
+  await savePlants(plants);
+  document.getElementById('pl_bulk').value='';
+  loadPlants();
+  alert(added+' plant(s) added.');
+}
+
+async function deletePlant(code){
+  if(!confirm('Remove this plant from master?'))return;
+  const plants=await getPlants();
+  await savePlants(plants.filter(p=>p.code!==code));
+  loadPlants();
+}
+async function clearPlants(){
+  if(!confirm('Clear all plants from master? This cannot be undone.'))return;
+  await savePlants([]);
+  loadPlants();
+}
+
+async function populatePlantSelect(selectId,restrictToUser){
+  const plants=await getPlants();
+  const sel=document.getElementById(selectId);
+  let list=plants;
+  if(restrictToUser){
+    const up=userPlants();
+    if(up!==null) list=plants.filter(p=>up.includes(p.code));
+  }
+  const withAll=selectId==='rptPlant';
+  sel.innerHTML=(withAll?'<option value="">All Plants</option>':'<option value="">Select Plant</option>')+list.map(p=>`<option value="${p.code}">${p.code} — ${p.name}</option>`).join('');
+}
+
+// ===== VENDOR MASTER =====
+async function loadVendors(){
+  const vendors=await getVendors();
+  document.getElementById('vendorCount').textContent=`Vendor Master (${vendors.length} vendors)`;
+  document.getElementById('vendorTableBody').innerHTML=vendors.length
+    ?vendors.map((v,i)=>`<tr><td>${i+1}</td><td style="font-weight:600;color:var(--blue-txt)">${v.code}</td><td>${v.name}</td>
+      <td><button class="btn btn-danger" style="padding:3px 7px;font-size:11px" onclick="deleteVendor('${v.code}')"><i class="ti ti-x"></i></button></td></tr>`).join('')
+    :'<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--txt3)">No vendors in master. Upload Excel to add.</td></tr>';
+}
+
+async function importVendors(input){
+  const file=input.files[0]; if(!file)return;
+  const resultEl=document.getElementById('vendorImportResult');
+  try{
+    const data=await file.arrayBuffer();
+    const wb=XLSX.read(data,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1});
+    const vendors=[];
+    for(let i=1;i<rows.length;i++){
+      const [code,name]=rows[i];
+      if(code&&name) vendors.push({code:String(code).trim(),name:String(name).trim()});
+    }
+    if(!vendors.length){ resultEl.innerHTML='<div class="alert alert-error"><i class="ti ti-alert-circle" style="font-size:18px;flex-shrink:0"></i><div>No valid rows found. Check your Excel format (Col A = Vendor Code, Col B = Vendor Name).</div></div>'; return; }
+    await saveVendors(vendors);
+    resultEl.innerHTML=`<div class="alert alert-success"><i class="ti ti-check" style="font-size:18px;flex-shrink:0"></i><div><strong>${vendors.length} vendors</strong> imported successfully!</div></div>`;
+    loadVendors();
+  }catch(e){
+    resultEl.innerHTML=`<div class="alert alert-error"><i class="ti ti-alert-circle" style="font-size:18px;flex-shrink:0"></i><div>Error reading file: ${e.message}</div></div>`;
+  }
+  input.value='';
+}
+async function deleteVendor(code){
+  if(!confirm('Remove this vendor from master?'))return;
+  const vendors=await getVendors();
+  await saveVendors(vendors.filter(v=>v.code!==code));
+  loadVendors();
+}
+async function clearVendors(){
+  if(!confirm('Clear all vendors from master? This cannot be undone.'))return;
+  await saveVendors([]);
+  loadVendors();
+}
+function downloadVendorTemplate(){
+  const csv='Vendor Code,Vendor Name\nVND001,ABC Transport\nVND002,XYZ Logistics\n';
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='vendor_master_template.csv';
+  a.click();
+}
+
+// ===== VENDOR AUTOCOMPLETE IN FORM =====
+async function vendorCodeInput(){
+  const val=document.getElementById('f_vendorCode').value.trim().toUpperCase();
+  const vendors=await getVendors();
+  const drop=document.getElementById('vcDropdown');
+  if(!val||vendors.length===0){ drop.classList.add('hidden'); document.getElementById('f_vendorName').value=''; return; }
+  const exact=vendors.find(v=>v.code.toUpperCase()===val);
+  if(exact){ document.getElementById('f_vendorName').value=exact.name; }
+  else { document.getElementById('f_vendorName').value=''; }
+  const matches=vendors.filter(v=>v.code.toUpperCase().includes(val)||v.name.toUpperCase().includes(val)).slice(0,8);
+  if(!matches.length){ drop.classList.add('hidden'); return; }
+  drop.innerHTML=matches.map(v=>`<div class="vc-item" onclick="selectVendor('${v.code}','${v.name.replace(/'/g,"\\'")}')"><span class="vc-code">${v.code}</span><span class="vc-name">${v.name}</span></div>`).join('');
+  drop.classList.remove('hidden');
+  checkDuplicate();
+}
+function selectVendor(code,name){
+  document.getElementById('f_vendorCode').value=code;
+  document.getElementById('f_vendorName').value=name;
+  closeVcDrop();
+  checkDuplicate();
+}
+function closeVcDrop(){ document.getElementById('vcDropdown').classList.add('hidden'); }
+
+// ===== VIEW BILL =====
+async function viewBill(id){
+  const bills=await getBills();
+  const b=bills.find(x=>x.id===id);
+  if (!b) return;
+  const rows=[
+    ['Bill ID',`<span class="bill-id-badge"><i class="ti ti-hash" style="font-size:10px"></i>${b.id}</span>`],
+    ['Plant',`<span class="pill pill-plant">${b.plant||'—'}</span>`],
+    ['Vendor Code',b.vendorCode],['Vendor Name',b.vendorName],['Date',b.date],
+    ['From',b.from],['To',b.to],['Vehicle Weight',b.vehWeight],['LR Number',b.lrNumber],
+    ['LR Date',b.lrDate],['Invoice Number',b.invoiceNo],['Bill Date',b.billDate],['Bill Number',b.billNo],
+    ['Amount','₹'+Number(b.amount||0).toLocaleString('en-IN')],
+    ['Advance Paid','₹'+Number(b.advance||0).toLocaleString('en-IN')],
+    ['Balance','₹'+Number(b.balance||0).toLocaleString('en-IN')],
+    ['Total','₹'+Number(b.total||0).toLocaleString('en-IN')],
+    ['Status',statusPill(b.status)],['Added By',b.createdBy||'—'],
+    ['Documents',b.docs&&b.docs.length?b.docs.map(d=>`<span style="display:inline-block;padding:2px 7px;background:var(--bg2);border-radius:var(--radius);font-size:11px;margin:2px">${d}</span>`).join(''):'No documents']
+  ];
+  document.getElementById('billModalBody').innerHTML='<div class="detail-grid">'+rows.map(([k,v])=>`<div class="detail-row"><div class="key">${k}</div><div class="val">${v||'—'}</div></div>`).join('')+'</div>';
+  const canEdit=currentUser&&(currentUser.role==='admin'||currentUser.role==='manager');
+  const isAdmin=currentUser&&currentUser.role==='admin';
+  document.getElementById('billModalFooter').innerHTML=`
+    ${isAdmin?`<button class="btn btn-danger" onclick="closeModal('billModal');confirmDelete('${b.id}')"><i class="ti ti-trash"></i> Delete</button>`:''}
+    ${canEdit?`<button class="btn btn-primary" onclick="closeModal('billModal');editBill('${b.id}')"><i class="ti ti-edit"></i> Edit</button>`:''}
+    <button class="btn" onclick="closeModal('billModal')">Close</button>`;
+  document.getElementById('billModal').classList.remove('hidden');
+}
+
+// ===== EDIT BILL =====
+async function editBill(id){
+  if(!currentUser||(currentUser.role!=='admin'&&currentUser.role!=='manager')){alert('No edit permission');return;}
+  const bills=await getBills();
+  const b=bills.find(x=>x.id===id);
+  if(!b)return;
+  editingBillId=id;
+  showPage('addbill');
+  await populatePlantSelect('f_plant',true);
+  const map={f_plant:'plant',f_vendorCode:'vendorCode',f_vendorName:'vendorName',f_date:'date',f_from:'from',f_to:'to',f_vehWeight:'vehWeight',f_lrNumber:'lrNumber',f_lrDate:'lrDate',f_invoiceNo:'invoiceNo',f_billDate:'billDate',f_billNo:'billNo',f_amount:'amount',f_advance:'advance',f_balance:'balance',f_total:'total',f_status:'status'};
+  Object.entries(map).forEach(([fid,bk])=>{ const el=document.getElementById(fid); if(el)el.value=b[bk]||''; });
+  document.getElementById('f_vendorName').removeAttribute('readonly');
+  document.getElementById('f_vendorName').style.background='';
+  uploadedFiles=b.docs||[];
+  document.getElementById('fileList').innerHTML=uploadedFiles.map(f=>`<div class="file-item"><i class="ti ti-file"></i>${f}</div>`).join('');
+  document.getElementById('billIdDisplay').innerHTML=`<span class="bill-id-badge"><i class="ti ti-hash" style="font-size:10px"></i>${b.id}</span>`;
+  document.getElementById('pageTitle').textContent='Edit Bill';
+}
+
+// ===== DELETE =====
+function confirmDelete(id){ deleteTargetId=id; closeModal('billModal'); document.getElementById('delModal').classList.remove('hidden'); }
+document.getElementById('confirmDelBtn').onclick=async function(){
+  if(!deleteTargetId||!currentUser||currentUser.role!=='admin'){alert('Only Admin can delete');return;}
+  const bills=await getBills();
+  await saveBills(bills.filter(b=>b.id!==deleteTargetId));
+  closeModal('delModal'); deleteTargetId=null; showPage('bills');
+};
+
+// ===== FORM =====
+function calcPayment(){
+  const amt=Number(document.getElementById('f_amount').value)||0;
+  const adv=Number(document.getElementById('f_advance').value)||0;
+  document.getElementById('f_balance').value=Math.max(0,amt-adv);
+  document.getElementById('f_total').value=amt;
+}
+
+async function checkDuplicate(){
+  const vc=document.getElementById('f_vendorCode').value.trim();
+  const lr=document.getElementById('f_lrNumber').value.trim();
+  const dupEl=document.getElementById('dupAlert');
+  if(!vc||!lr){dupEl.innerHTML='';return;}
+  const bills=await getBills();
+  const dup=bills.find(b=>b.vendorCode===vc&&b.lrNumber===lr&&b.id!==editingBillId);
+  dupEl.innerHTML=dup?`<div class="alert alert-warn"><i class="ti ti-alert-triangle" style="font-size:18px;flex-shrink:0"></i><div><strong>Duplicate Alert!</strong> Vendor Code "${vc}" + LR "${lr}" already exists (Bill ID: ${dup.id}). Cannot save.</div></div>`:'';
+}
+
+function handleFiles(input){
+  uploadedFiles=Array.from(input.files).map(f=>f.name);
+  document.getElementById('fileList').innerHTML=uploadedFiles.map(f=>`<div class="file-item"><i class="ti ti-file"></i>${f}<span style="margin-left:auto;color:var(--txt3);font-size:11px">Uploaded</span></div>`).join('');
+}
+
+async function submitBill(){
+  if(currentUser&&currentUser.role==='viewer'){showAlert('billFormAlert','You do not have permission to add bills','error');return;}
+  const plant=document.getElementById('f_plant').value;
+  const vendorCode=document.getElementById('f_vendorCode').value.trim();
+  const vendorName=document.getElementById('f_vendorName').value.trim();
+  const date=document.getElementById('f_date').value;
+  const lrNumber=document.getElementById('f_lrNumber').value.trim();
+  if(!plant||!vendorCode||!vendorName||!date||!lrNumber){showAlert('billFormAlert','Plant, Vendor Code, Vendor Name, Date and LR Number are required (*)','error');return;}
+  // enforce plant access
+  const up=userPlants();
+  if(up!==null && !up.includes(plant)){ showAlert('billFormAlert','You do not have access to this Plant','error'); return; }
+  const bills=await getBills();
+  const dup=bills.find(b=>b.vendorCode===vendorCode&&b.lrNumber===lrNumber&&b.id!==editingBillId);
+  if(dup){showAlert('billFormAlert',`Duplicate! Vendor Code "${vendorCode}" + LR "${lrNumber}" already exists (Bill ID: ${dup.id}).`,'error');return;}
+  const newId=editingBillId||genBillId();
+  const bill={
+    id:newId, plant, vendorCode, vendorName, date,
+    from:document.getElementById('f_from').value, to:document.getElementById('f_to').value,
+    vehWeight:document.getElementById('f_vehWeight').value, lrNumber,
+    lrDate:document.getElementById('f_lrDate').value,
+    invoiceNo:document.getElementById('f_invoiceNo').value,
+    billDate:document.getElementById('f_billDate').value,
+    billNo:document.getElementById('f_billNo').value,
+    amount:document.getElementById('f_amount').value,
+    advance:document.getElementById('f_advance').value,
+    balance:document.getElementById('f_balance').value,
+    total:document.getElementById('f_total').value,
+    status:document.getElementById('f_status').value,
+    docs:uploadedFiles, createdBy:currentUser.username,
+    updatedAt:new Date().toISOString()
+  };
+  if(editingBillId){ const idx=bills.findIndex(b=>b.id===editingBillId); if(idx>-1)bills[idx]=bill; }
+  else bills.push(bill);
+  await saveBills(bills);
+  showAlert('billFormAlert',`Bill <strong>${newId}</strong> ${editingBillId?'updated':'saved'} and synced to cloud!`,'success');
+  editingBillId=null; uploadedFiles=[];
+  setTimeout(()=>showPage('bills'),1400);
+}
+
+async function resetForm(){
+  editingBillId=null; uploadedFiles=[];
+  ['f_vendorCode','f_vendorName','f_date','f_from','f_to','f_vehWeight','f_lrNumber','f_lrDate','f_invoiceNo','f_billDate','f_billNo','f_amount','f_advance','f_balance','f_total'].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=''; });
+  document.getElementById('f_vendorName').setAttribute('readonly','');
+  document.getElementById('f_vendorName').style.background='var(--bg2)';
+  document.getElementById('f_status').value='Pending';
+  document.getElementById('fileList').innerHTML='';
+  document.getElementById('billFormAlert').innerHTML='';
+  document.getElementById('dupAlert').innerHTML='';
+  document.getElementById('docInput').value='';
+  document.getElementById('billIdDisplay').innerHTML='<span style="color:var(--txt3);font-size:11px">Auto-generated on save</span>';
+  await populatePlantSelect('f_plant',true);
+  closeVcDrop();
+}
+
+// ===== USERS =====
+async function loadUsers(){
+  if(!currentUser||currentUser.role!=='admin'){ document.getElementById('usersList').innerHTML='<div class="empty-state"><i class="ti ti-lock"></i><p>Only Admin can view users</p></div>'; return; }
+  const users=await getUsers();
+  document.getElementById('usersList').innerHTML=users.map(u=>`
+    <div class="user-card">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="avatar">${u.name.charAt(0).toUpperCase()}</div>
+        <div>
+          <div style="font-size:14px;font-weight:500">${u.name}</div>
+          <div style="font-size:12px;color:var(--txt2)">@${u.username} · <span style="color:var(--txt3)">${u.contact||'No contact'}</span></div>
+          <div style="font-size:11px;color:var(--txt3)">${new Date(u.createdAt).toLocaleDateString('en-IN')}</div>
+          ${u.plants&&u.plants.length?`<div style="margin-top:4px">${u.plants.map(p=>`<span class="plant-chip">${p}</span>`).join(' ')}</div>`:(u.role!=='admin'?'<div style="font-size:11px;color:var(--red-txt);margin-top:4px">No plant assigned</div>':'')}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="role-badge badge-${u.role}">${u.role}</span>
+        ${u.role!=='admin'?`<button class="btn btn-danger" style="padding:5px 9px;font-size:12px" onclick="deleteUser('${u.id}')"><i class="ti ti-trash"></i></button>`:`<span style="font-size:11px;color:var(--txt3)">Protected</span>`}
+      </div>
+    </div>`).join('');
+}
+async function deleteUser(id){
+  if(!currentUser||currentUser.role!=='admin')return;
+  if(!confirm('Permanently delete this user?'))return;
+  const users=await getUsers();
+  await saveUsers(users.filter(u=>u.id!==id));
+  loadUsers();
+}
+
+// ===== REPORTS =====
+async function loadReportStats(){
+  let bills=await getBills();
+  bills=billsForUser(bills);
+  await populatePlantSelect('rptPlant',true);
+  const total=bills.reduce((s,b)=>s+Number(b.amount||0),0);
+  const paidAmt=bills.filter(b=>b.status==='Paid').reduce((s,b)=>s+Number(b.amount||0),0);
+  const outstanding=bills.filter(b=>b.status!=='Paid').reduce((s,b)=>s+Number(b.balance||0),0);
+  document.getElementById('reportStats').innerHTML=[
+    ['Total Bills',bills.length],
+    ['Total Amount','₹'+total.toLocaleString('en-IN')],
+    ['Paid','₹'+paidAmt.toLocaleString('en-IN')],
+    ['Outstanding','₹'+outstanding.toLocaleString('en-IN')],
+  ].map(([l,v])=>`<div class="stat-card"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('');
+}
+
+async function generateReport(){
+  const start=document.getElementById('rptStart').value;
+  const end=document.getElementById('rptEnd').value;
+  const status=document.getElementById('rptStatus').value;
+  const plant=document.getElementById('rptPlant').value;
+  const vendor=document.getElementById('rptVendor').value.trim().toLowerCase();
+  let bills=await getBills();
+  bills=billsForUser(bills);
+  if(start) bills=bills.filter(b=>b.date>=start);
+  if(end) bills=bills.filter(b=>b.date<=end);
+  if(status) bills=bills.filter(b=>b.status===status);
+  if(plant) bills=bills.filter(b=>b.plant===plant);
+  if(vendor) bills=bills.filter(b=>(b.vendorCode+'').toLowerCase().includes(vendor));
+  reportData=bills;
+  const totalAmt=bills.reduce((s,b)=>s+Number(b.amount||0),0);
+  const totalBal=bills.reduce((s,b)=>s+Number(b.balance||0),0);
+  document.getElementById('reportCount').textContent=`${bills.length} bill(s) found`;
+  document.getElementById('reportTbody').innerHTML=bills.length
+    ?bills.map(b=>`<tr><td><span class="bill-id-badge" style="font-size:10px">${b.id}</span></td><td><span class="pill pill-plant">${b.plant||'—'}</span></td><td>${b.vendorCode}</td><td>${b.vendorName}</td><td>${b.lrNumber}</td><td>${b.date}</td><td>₹${Number(b.amount||0).toLocaleString('en-IN')}</td><td>₹${Number(b.advance||0).toLocaleString('en-IN')}</td><td>₹${Number(b.balance||0).toLocaleString('en-IN')}</td><td>${statusPill(b.status)}</td></tr>`).join('')
+    :'<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--txt3)">No bills match this filter</td></tr>';
+  document.getElementById('reportSummaryRow').innerHTML=`Total Amount: <strong>₹${totalAmt.toLocaleString('en-IN')}</strong> &nbsp;|&nbsp; Total Outstanding Balance: <strong>₹${totalBal.toLocaleString('en-IN')}</strong>`;
+  document.getElementById('reportTableWrap').classList.remove('hidden');
+}
+
+function printReport(){ window.print(); }
+async function exportReportCSV(){ exportCSVData(reportData.length?reportData:billsForUser(await getBills())); }
+async function exportCSV(){ exportCSVData(billsForUser(await getBills())); }
+function exportCSVData(bills){
+  const headers=['Bill ID','Plant','Vendor Code','Vendor Name','Date','From','To','Vehicle Weight','LR Number','LR Date','Invoice No','Bill Date','Bill Number','Amount','Advance Paid','Balance','Total Payment','Status','Created By'];
+  const rows=bills.map(b=>[b.id,b.plant,b.vendorCode,b.vendorName,b.date,b.from,b.to,b.vehWeight,b.lrNumber,b.lrDate,b.invoiceNo,b.billDate,b.billNo,b.amount,b.advance,b.balance,b.total,b.status,b.createdBy].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+  const csv=[headers.join(','),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='transport_bills_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+// ===== HELPERS =====
+function showAlert(elId,msg,type){
+  const el=document.getElementById(elId);
+  if(!el)return;
+  const icons={error:'ti-alert-circle',warn:'ti-alert-triangle',success:'ti-check',info:'ti-info-circle'};
+  el.innerHTML=`<div class="alert alert-${type}"><i class="ti ${icons[type]||'ti-info-circle'}" style="font-size:18px;flex-shrink:0"></i><div>${msg}</div></div>`;
+  if(type==='success') setTimeout(()=>el.innerHTML='',5000);
+}
+function clearAlert(elId){ const el=document.getElementById(elId); if(el)el.innerHTML=''; }
+function closeModal(id){ document.getElementById(id).classList.add('hidden'); }
+['billModal','delModal'].forEach(id=>{ document.getElementById(id).addEventListener('click',function(e){ if(e.target===this)closeModal(id); }); });
+
+// ===== BOOT =====
+window.addEventListener('load',async ()=>{
+  const cfg=loadStoredFbConfig();
+  if(!cfg){
+    // No config saved yet — show setup screen
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    document.getElementById('configPage').classList.remove('hidden');
+    return;
+  }
+  const ok=await initFirebase();
+  if(!ok){
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    document.getElementById('configPage').classList.remove('hidden');
+    showAlert('configAlert','Previously saved config failed to connect. Re-check or skip to offline mode.','error');
+    return;
+  }
+  initApp();
+});
+</script>
+</body>
+</html>
